@@ -10,6 +10,7 @@ on:
 
 jobs:
   update_translations:
+    if: ${{ github.repository == 'advplyr/audiobookshelf' }}
     runs-on: ubuntu-latest
     steps:
       # Check out the repository

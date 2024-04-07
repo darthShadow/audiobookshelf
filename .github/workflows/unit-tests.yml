@@ -11,6 +11,7 @@ on:
 
 jobs:
   run-unit-tests:
+    if: ${{ ! contains(github.event.head_commit.message, 'skip ci') && github.event_name != 'pull_request' }}
     name: Run Unit Tests
     runs-on: ubuntu-latest
 
@@ -25,13 +26,21 @@ jobs:
           ref: ${{ inputs.ref }}
         if: github.event_name == 'workflow_dispatch'
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Print Environment
+        shell: bash
+        run: |
+          printf "\n\nNPM Environment:\n\n"
+          npm config list
+          printf "\n\nSystem Environment:\n\n"
+          env
+
+      - name: Install Dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run Tests
         run: npm test
