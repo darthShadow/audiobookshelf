@@ -11,6 +11,7 @@ on:
 
 jobs:
   analyze:
+    if: ${{ github.repository == 'advplyr/audiobookshelf' }}
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
