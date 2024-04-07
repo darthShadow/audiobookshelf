@@ -8,37 +8,51 @@ on:
 
 jobs:
   build:
-    name: build and test
+    if: ${{ ! contains(github.event.head_commit.message, 'skip ci') && github.event_name != 'pull_request' }}
+    name: Build & Test
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
 
-      - name: setup nade
-        uses: actions/setup-node@v3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: install pkg
+      - name: Print Environment
+        shell: bash
+        run: |
+          printf "\n\nNPM Environment:\n\n"
+          npm config list
+          printf "\n\nSystem Environment:\n\n"
+          env
+
+      - name: Install pkg
         run: npm install -g pkg
 
-      - name: get client dependencies
+      - name: Get Client Dependencies
         working-directory: client
         run: npm ci
 
-      - name: build client
+      - name: Build Client
         working-directory: client
         run: npm run generate
 
-      - name: get server dependencies
-        run: npm ci --only=production
+      - name: Get Server Dependencies
+        run: npm ci --omit=dev
 
-      - name: build binary
+      - name: Build Binary
         run: pkg -t node18-linux-x64 -o audiobookshelf .
 
-      - name: run audiobookshelf
+      - name: Run Audiobookshelf
         run: |
           ./audiobookshelf &
           sleep 5
 
-      - name: test if server is available
+      - name: Test if WAL File Exists
+        run: ls -lh /home/runner/work/audiobookshelf/audiobookshelf/config/*
+
+      - name: Test if Server is available
         run: curl -sf http://127.0.0.1:3333 | grep Audiobookshelf
