@@ -198,15 +198,34 @@ class Database {
       transactionType: 'IMMEDIATE'
     })
 
+    this.sequelize.afterConnect(async (connection, config) => {
+      try {
+        await connection.run('PRAGMA journal_mode=WAL')
+        await connection.run('PRAGMA busy_timeout=5000')
+        // 0 = OFF, 1 = NORMAL, 2 = FULL, 3 = EXTRA
+        await connection.run('PRAGMA synchronous=1')
+        // 0 = DEFAULT, 1 = FILE, 2 = MEMORY
+        await connection.run('PRAGMA temp_store=2')
+        await connection.run('PRAGMA threads=8')
+        // // 1048576 = 1GB
+        await connection.run('PRAGMA cache_size=-1048576')
+        // // 8589934592 = 8GB
+        await connection.run('PRAGMA mmap_size=8589934592')
+        Logger.info(`[Database] Set sqlite PRAGMA settings`)
+      } catch (error) {
+        Logger.error(`[Database] Failed to set sqlite PRAGMA settings`, error)
+      }
+    })
+
     // Helper function
     this.sequelize.uppercaseFirst = str => str ? `${str[0].toUpperCase()}${str.substr(1)}` : ''
 
     try {
       await this.sequelize.authenticate()
-      Logger.info(`[Database] Db connection was successful`)
+      Logger.info(`[Database] DB connection was successful`)
       return true
     } catch (error) {
-      Logger.error(`[Database] Failed to connect to db`, error)
+      Logger.error(`[Database] Failed to connect to DB`, error)
       return false
     }
   }
@@ -256,8 +275,8 @@ class Database {
 
   /**
    * Compare two server versions
-   * @param {string} v1 
-   * @param {string} v2 
+   * @param {string} v1
+   * @param {string} v2
    * @returns {-1|0|1} 1 if v1 > v2
    */
   compareVersions(v1, v2) {
@@ -267,9 +286,9 @@ class Database {
 
   /**
    * Checks if migration to sqlite db is necessary & runs migration.
-   * 
+   *
    * Check if version was upgraded and run any version specific migrations.
-   * 
+   *
    * Loads most of the data from the database. This is a temporary solution.
    */
   async loadData() {
@@ -323,9 +342,9 @@ class Database {
 
   /**
    * Create root user
-   * @param {string} username 
-   * @param {string} pash 
-   * @param {Auth} auth 
+   * @param {string} username
+   * @param {string} pash
+   * @param {Auth} auth
    * @returns {boolean} true if created
    */
   async createRootUser(username, pash, auth) {
@@ -420,8 +439,8 @@ class Database {
 
   /**
    * Save metadata file and update library item
-   * 
-   * @param {import('./objects/LibraryItem')} oldLibraryItem 
+   *
+   * @param {import('./objects/LibraryItem')} oldLibraryItem
    * @returns {Promise<boolean>}
    */
   async updateLibraryItem(oldLibraryItem) {
@@ -662,8 +681,8 @@ class Database {
    * Used when updating items to make sure author id exists
    * If library filter data is set then use that for check
    * otherwise lookup in db
-   * @param {string} libraryId 
-   * @param {string} authorId 
+   * @param {string} libraryId
+   * @param {string} authorId
    * @returns {Promise<boolean>}
    */
   async checkAuthorExists(libraryId, authorId) {
@@ -677,8 +696,8 @@ class Database {
    * Used when updating items to make sure series id exists
    * If library filter data is set then use that for check
    * otherwise lookup in db
-   * @param {string} libraryId 
-   * @param {string} seriesId 
+   * @param {string} libraryId
+   * @param {string} seriesId
    * @returns {Promise<boolean>}
    */
   async checkSeriesExists(libraryId, seriesId) {
@@ -690,10 +709,10 @@ class Database {
 
   /**
    * Get author id for library by name. Uses library filter data if available
-   * 
-   * @param {string} libraryId 
-   * @param {string} authorName 
-   * @returns {Promise<string>} author id or null if not found 
+   *
+   * @param {string} libraryId
+   * @param {string} authorName
+   * @returns {Promise<string>} author id or null if not found
    */
   async getAuthorIdByName(libraryId, authorName) {
     if (!this.libraryFilterData[libraryId]) {
@@ -704,9 +723,9 @@ class Database {
 
   /**
    * Get series id for library by name. Uses library filter data if available
-   * 
-   * @param {string} libraryId 
-   * @param {string} seriesName 
+   *
+   * @param {string} libraryId
+   * @param {string} seriesName
    * @returns {Promise<string>} series id or null if not found
    */
   async getSeriesIdByName(libraryId, seriesName) {
@@ -718,7 +737,7 @@ class Database {
 
   /**
    * Reset numIssues for library
-   * @param {string} libraryId 
+   * @param {string} libraryId
    */
   async resetLibraryIssuesFilterData(libraryId) {
     if (!this.libraryFilterData[libraryId]) return // Do nothing if filter data is not set
